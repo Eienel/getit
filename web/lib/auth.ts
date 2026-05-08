@@ -46,7 +46,7 @@ export async function startMagicLinkLogin(email: string, appUrl: string): Promis
     expiresAt,
   });
 
-  const link = `${appUrl.replace(/\/$/, "")}/login?token=${encodeURIComponent(token)}`;
+  const link = `${appUrl.replace(/\/$/, "")}/api/auth/callback?token=${encodeURIComponent(token)}`;
   await sendMagicLinkEmail({ to: normalized, link });
 }
 

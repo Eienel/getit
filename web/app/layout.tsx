@@ -4,7 +4,7 @@ import { Masthead } from "./_components/masthead";
 import { Footer } from "./_components/footer";
 
 export const metadata: Metadata = {
-  title: "BEQUEST — A Crypto Inheritance Agent",
+  title: "BEQUEST · A Crypto Inheritance Agent",
   description:
     "An autonomous onchain agent that delivers your crypto to your beneficiaries when you stop checking in. Built on the Zerion CLI.",
 };

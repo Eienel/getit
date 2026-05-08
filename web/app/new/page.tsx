@@ -13,9 +13,10 @@ export default async function NewBequestPage() {
       <hr className="my-6" />
 
       <p className="text-justify dropcap mb-6">
-        Below, declare your intention. The agent will mint a fresh wallet for this bequest
-        alone — no other funds are at risk. You will be asked to send the bequest amount,
-        plus a small allowance for gas, to the deposit address shown on the next page.
+        Below, declare your intention. The agent will mint a fresh wallet for this
+        bequest alone. No other funds are at risk. You will be asked to send the
+        bequest amount, plus a small allowance for gas, to the deposit address shown
+        on the next page.
       </p>
 
       <NewBequestForm />
