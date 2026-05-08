@@ -53,16 +53,16 @@ export async function sendNudgeEmail({
   const headlines = {
     "50pct": "Halfway. Let us know you're still here.",
     "75pct": "Three-quarter mark. Tap to reset the clock.",
-    "90pct": "Final notice — your bequest will deliver shortly.",
+    "90pct": "Final notice. Your bequest will deliver shortly.",
   };
   const subject = `[Bequest ${bequestId}] ${headlines[kind]}`;
   const html = `<div style="font-family:Georgia,serif;max-width:520px;margin:auto;padding:32px;background:#f4ede4;color:#1a1a1a">
     <h1 style="font-family:'Playfair Display',Georgia,serif;letter-spacing:0.15em;text-align:center;font-weight:900">BEQUEST</h1>
     <hr style="border:none;border-top:3px double #1a1a1a;margin:8px 0 24px"/>
     <h2 style="font-family:'Playfair Display',Georgia,serif">${headlines[kind]}</h2>
-    <p>Your bequest <code>${bequestId}</code> — ${amount} ${asset} to <code>${shortAddr(beneficiary)}</code> — will deliver in approximately <strong>${formatRemaining(remainingMin)}</strong> unless you check in.</p>
+    <p>Your bequest <code>${bequestId}</code> (${amount} ${asset} to <code>${shortAddr(beneficiary)}</code>) will deliver in approximately <strong>${formatRemaining(remainingMin)}</strong> unless you check in.</p>
     <p style="text-align:center;margin:32px 0">
-      <a href="${link}" style="display:inline-block;padding:12px 28px;border:1px solid #1a1a1a;background:#1a1a1a;color:#f4ede4;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase">I'm alive — reset the clock</a>
+      <a href="${link}" style="display:inline-block;padding:12px 28px;border:1px solid #1a1a1a;background:#1a1a1a;color:#f4ede4;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase">I am alive · reset the clock</a>
     </p>
     <p style="font-size:13px;color:#4a4a4a">You can also send <code>/ping</code> to the Bequest Telegram bot, or open the bequest in your browser.</p>
   </div>`;

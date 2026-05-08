@@ -146,7 +146,7 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
 
             <div className="flex flex-col sm:flex-row gap-3 mt-6 justify-center">
               <button onClick={ping} disabled={busy} className="btn-solid">
-                {busy ? "…" : "I'm alive — reset"}
+                {busy ? "…" : "I am alive · reset clock"}
               </button>
               <button onClick={connectTelegram} disabled={busy} className="btn">
                 Connect Telegram
@@ -154,7 +154,7 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
             </div>
             {tgUrl && (
               <p className="text-xs text-ink-faded mt-3">
-                Bot opened in a new tab — tap <em>Start</em> to link.
+                Bot opened in a new tab. Tap <em>Start</em> to link.
               </p>
             )}
           </>
@@ -220,7 +220,7 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
               <dd>{new Date(policy.expiresAt).toUTCString()}</dd>
             </dl>
           ) : (
-            <p className="mt-2 text-ink-faded">No policy yet — fund the wallet to arm it.</p>
+            <p className="mt-2 text-ink-faded">No policy yet. Fund the wallet to arm it.</p>
           )}
           <p className="text-xs text-ink-faded mt-3">
             This token can only send to the allowlisted address on {policy?.chain ?? "the chain"}, and cannot grant ERC-20 approvals.
