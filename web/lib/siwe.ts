@@ -13,7 +13,7 @@ import { getChain } from "./zerion/chains";
 
 const NONCE_TTL_SEC = 10 * 60; // 10 minutes
 const MESSAGE_TTL_SEC = 10 * 60;
-const ACCEPTED_CHAIN_IDS = [8453, 1, 10, 42161]; // base, ethereum, optimism, arbitrum
+const ACCEPTED_CHAIN_IDS = [8453, 84532, 1, 10, 42161]; // base, base-sepolia, ethereum, optimism, arbitrum
 
 export type SiweNonceToken = string;
 
@@ -151,9 +151,10 @@ export async function verifySiwe(args: VerifyArgs): Promise<VerifyResult> {
   return { ok: true, address: parsed.address.toLowerCase() as `0x${string}`, chainId };
 }
 
-function chainIdToKey(chainId: number): "base" | "ethereum" | "optimism" | "arbitrum" {
+function chainIdToKey(chainId: number): "base" | "base-sepolia" | "ethereum" | "optimism" | "arbitrum" {
   switch (chainId) {
     case 8453: return "base";
+    case 84532: return "base-sepolia";
     case 1: return "ethereum";
     case 10: return "optimism";
     case 42161: return "arbitrum";

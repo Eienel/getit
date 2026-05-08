@@ -3,7 +3,13 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-const CHAINS = ["base", "ethereum", "optimism", "arbitrum"] as const;
+const CHAINS = [
+  { value: "base", label: "Base" },
+  { value: "base-sepolia", label: "Base Sepolia (testnet)" },
+  { value: "ethereum", label: "Ethereum" },
+  { value: "optimism", label: "Optimism" },
+  { value: "arbitrum", label: "Arbitrum" },
+] as const;
 const ASSETS = ["USDC", "ETH"] as const;
 
 const WINDOW_OPTIONS = [
@@ -20,10 +26,11 @@ export function NewBequestForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  type ChainKey = (typeof CHAINS)[number]["value"];
   const [title, setTitle] = useState("");
   const [beneficiary, setBeneficiary] = useState("");
   const [asset, setAsset] = useState<(typeof ASSETS)[number]>("USDC");
-  const [chain, setChain] = useState<(typeof CHAINS)[number]>("base");
+  const [chain, setChain] = useState<ChainKey>("base");
   const [amount, setAmount] = useState("0.01");
   const [checkin, setCheckin] = useState(60);
 
@@ -91,7 +98,7 @@ export function NewBequestForm() {
           <label className="label" htmlFor="chain">Chain</label>
           <select id="chain" value={chain} onChange={(e) => setChain(e.target.value as typeof chain)} className="input">
             {CHAINS.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
         </div>

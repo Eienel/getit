@@ -1,5 +1,6 @@
 const EXPLORERS: Record<string, string> = {
   base: "https://basescan.org",
+  "base-sepolia": "https://sepolia.basescan.org",
   ethereum: "https://etherscan.io",
   optimism: "https://optimistic.etherscan.io",
   arbitrum: "https://arbiscan.io",

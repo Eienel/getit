@@ -1,6 +1,6 @@
 // Asset registry. For the hackathon we pin a small allowlist of well-known
 // assets per chain. The full Zerion CLI resolves these dynamically via
-// /cli/utils/trading/resolve-token.js + /v1/fungibles/<id>/ — that path stays
+// /cli/utils/trading/resolve-token.js + /v1/fungibles/<id>/. That path stays
 // available to extend (see resolveTokenViaZerion below).
 
 import { fetchZerion } from "./api";
@@ -20,6 +20,11 @@ const REGISTRY: Asset[] = [
   { symbol: "USDC", chain: "base", address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", decimals: 6, display: "USDC" },
   { symbol: "ETH", chain: "base", address: "native", decimals: 18, display: "ETH" },
   { symbol: "WETH", chain: "base", address: "0x4200000000000000000000000000000000000006", decimals: 18, display: "WETH" },
+  // Base Sepolia (testnet). Circle's official test USDC + native test ETH.
+  // Faucets: https://portal.cdp.coinbase.com/products/faucet (ETH),
+  //          https://faucet.circle.com/                       (USDC).
+  { symbol: "USDC", chain: "base-sepolia", address: "0x036cbd53842c5426634e7929541ec2318f3dcf7e", decimals: 6, display: "USDC" },
+  { symbol: "ETH", chain: "base-sepolia", address: "native", decimals: 18, display: "ETH" },
   // Ethereum
   { symbol: "USDC", chain: "ethereum", address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", decimals: 6, display: "USDC" },
   { symbol: "ETH", chain: "ethereum", address: "native", decimals: 18, display: "ETH" },

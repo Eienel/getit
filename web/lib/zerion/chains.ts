@@ -1,12 +1,12 @@
 // Hard-coded chain configs for the demo. The full Zerion CLI fetches these
-// from the API catalog at /cli/utils/chain/catalog.js — for the hackathon we
-// pin Base and ETH-mainnet support so the demo is fast and doesn't depend on
-// catalog resolution. Easy to extend.
+// from the API catalog at /cli/utils/chain/catalog.js. For the hackathon we
+// pin a small set of chains so the demo is fast and doesn't depend on catalog
+// resolution. Easy to extend.
 
-import { base, mainnet, optimism, arbitrum } from "viem/chains";
+import { base, baseSepolia, mainnet, optimism, arbitrum } from "viem/chains";
 import type { Chain } from "viem";
 
-export type ChainKey = "base" | "ethereum" | "optimism" | "arbitrum";
+export type ChainKey = "base" | "base-sepolia" | "ethereum" | "optimism" | "arbitrum";
 
 export const CHAINS: Record<ChainKey, { viem: Chain; rpcs: string[] }> = {
   base: {
@@ -15,6 +15,13 @@ export const CHAINS: Record<ChainKey, { viem: Chain; rpcs: string[] }> = {
       "https://mainnet.base.org",
       "https://base-rpc.publicnode.com",
       "https://base.llamarpc.com",
+    ],
+  },
+  "base-sepolia": {
+    viem: baseSepolia,
+    rpcs: [
+      "https://sepolia.base.org",
+      "https://base-sepolia-rpc.publicnode.com",
     ],
   },
   ethereum: {
@@ -35,4 +42,8 @@ export function getChain(key: string): { viem: Chain; rpcs: string[] } {
   const c = CHAINS[key as ChainKey];
   if (!c) throw new Error(`Unsupported chain: ${key}`);
   return c;
+}
+
+export function isTestnet(key: string): boolean {
+  return key === "base-sepolia";
 }

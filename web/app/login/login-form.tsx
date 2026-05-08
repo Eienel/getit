@@ -18,6 +18,7 @@ declare global {
 
 const ACCEPTED_CHAINS: Record<number, string> = {
   8453: "Base",
+  84532: "Base Sepolia",
   1: "Ethereum",
   10: "Optimism",
   42161: "Arbitrum",
@@ -65,7 +66,7 @@ export function LoginForm() {
           });
         } catch {
           throw new Error(
-            `Connected to chain ${chainId} which is not supported. Switch to Base, Ethereum, Optimism, or Arbitrum and try again.`,
+            `Connected to chain ${chainId} which is not supported. Switch to Base, Base Sepolia, Ethereum, Optimism, or Arbitrum and try again.`,
           );
         }
       }
