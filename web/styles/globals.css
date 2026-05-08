@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap");
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: #f4ede4;
+  color: #1a1a1a;
+  font-family: "Source Serif Pro", "Times New Roman", Times, serif;
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+a {
+  color: #1a1a1a;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: #8b1c1c;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #1a1a1a;
+}
+
+button {
+  font-family: inherit;
+}
+
+@layer components {
+  .rule {
+    @apply border-t border-ink;
+  }
+  .rule-thick {
+    border-top: 3px double #1a1a1a;
+  }
+  .smallcaps {
+    @apply uppercase tracking-smallcaps;
+  }
+  .masthead {
+    @apply uppercase tracking-masthead font-display;
+  }
+  .dropcap::first-letter {
+    @apply font-display font-black text-7xl float-left mr-2 mt-1 leading-[0.85];
+  }
+  .pulled-quote {
+    @apply font-display italic text-2xl leading-snug border-y border-ink py-4 my-6 text-center;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 border border-ink bg-paper text-ink font-serif text-sm uppercase tracking-smallcaps no-underline hover:bg-ink hover:text-paper transition-colors;
+  }
+  .btn-solid {
+    @apply inline-flex items-center justify-center px-4 py-2 border border-ink bg-ink text-paper font-serif text-sm uppercase tracking-smallcaps no-underline hover:bg-paper hover:text-ink transition-colors;
+  }
+  .input {
+    @apply w-full bg-paper border-b border-ink px-1 py-2 font-serif text-ink focus:outline-none focus:border-b-2;
+  }
+  .label {
+    @apply block text-xs uppercase tracking-smallcaps text-ink-faded mb-1;
+  }
+  .badge {
+    @apply inline-block px-2 py-0.5 border border-ink text-xs uppercase tracking-smallcaps font-serif;
+  }
+  .badge-solid {
+    @apply inline-block px-2 py-0.5 border border-ink bg-ink text-paper text-xs uppercase tracking-smallcaps font-serif;
+  }
+  .col-rule {
+    column-rule: 1px solid #1a1a1a;
+  }
+}
+
+/* Subtle paper grain — not a heavy texture, just a hint of imperfection */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.015) 0, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(0, 0, 0, 0.015) 0, transparent 50%);
+  z-index: -1;
+}
