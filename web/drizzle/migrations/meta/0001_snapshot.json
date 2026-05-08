@@ -1,0 +1,165 @@
+{
+  "id": "d244526c-bf6d-4994-bdcd-7905ee67b7f1",
+  "prevId": "ba43a43f-73e3-46d0-b367-5aed99da3912",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.bequests": {
+      "name": "bequests",
+      "schema": "",
+      "columns": {
+        "id": {"name": "id", "type": "text", "primaryKey": true, "notNull": true},
+        "user_id": {"name": "user_id", "type": "uuid", "primaryKey": false, "notNull": true},
+        "title": {"name": "title", "type": "text", "primaryKey": false, "notNull": false},
+        "beneficiary_address": {"name": "beneficiary_address", "type": "text", "primaryKey": false, "notNull": true},
+        "asset_symbol": {"name": "asset_symbol", "type": "text", "primaryKey": false, "notNull": true},
+        "asset_chain": {"name": "asset_chain", "type": "text", "primaryKey": false, "notNull": true},
+        "amount_decimal": {"name": "amount_decimal", "type": "text", "primaryKey": false, "notNull": true},
+        "checkin_window_seconds": {"name": "checkin_window_seconds", "type": "integer", "primaryKey": false, "notNull": true},
+        "wallet_address": {"name": "wallet_address", "type": "text", "primaryKey": false, "notNull": true},
+        "wallet_key_ciphertext": {"name": "wallet_key_ciphertext", "type": "text", "primaryKey": false, "notNull": true},
+        "wallet_key_nonce": {"name": "wallet_key_nonce", "type": "text", "primaryKey": false, "notNull": true},
+        "policy_json": {"name": "policy_json", "type": "text", "primaryKey": false, "notNull": false},
+        "agent_token_ciphertext": {"name": "agent_token_ciphertext", "type": "text", "primaryKey": false, "notNull": false},
+        "agent_token_nonce": {"name": "agent_token_nonce", "type": "text", "primaryKey": false, "notNull": false},
+        "status": {"name": "status", "type": "text", "primaryKey": false, "notNull": true, "default": "'draft'"},
+        "last_ping_at": {"name": "last_ping_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": false},
+        "armed_at": {"name": "armed_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": false},
+        "triggered_at": {"name": "triggered_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": false},
+        "cancelled_at": {"name": "cancelled_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": false},
+        "created_at": {"name": "created_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()"},
+        "txn_hash": {"name": "txn_hash", "type": "text", "primaryKey": false, "notNull": false},
+        "failure_reason": {"name": "failure_reason", "type": "text", "primaryKey": false, "notNull": false}
+      },
+      "indexes": {
+        "bequest_user_idx": {"name": "bequest_user_idx", "columns": [{"expression": "user_id", "isExpression": false, "asc": true, "nulls": "last"}], "isUnique": false, "concurrently": false, "method": "btree", "with": {}},
+        "bequest_status_idx": {"name": "bequest_status_idx", "columns": [{"expression": "status", "isExpression": false, "asc": true, "nulls": "last"}], "isUnique": false, "concurrently": false, "method": "btree", "with": {}}
+      },
+      "foreignKeys": {
+        "bequests_user_id_users_id_fk": {"name": "bequests_user_id_users_id_fk", "tableFrom": "bequests", "tableTo": "users", "columnsFrom": ["user_id"], "columnsTo": ["id"], "onDelete": "cascade", "onUpdate": "no action"}
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "bequests_wallet_address_unique": {"name": "bequests_wallet_address_unique", "nullsNotDistinct": false, "columns": ["wallet_address"]}
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.magic_links": {
+      "name": "magic_links",
+      "schema": "",
+      "columns": {
+        "id": {"name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()"},
+        "email": {"name": "email", "type": "text", "primaryKey": false, "notNull": true},
+        "token_hash": {"name": "token_hash", "type": "text", "primaryKey": false, "notNull": true},
+        "expires_at": {"name": "expires_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true},
+        "consumed_at": {"name": "consumed_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": false},
+        "created_at": {"name": "created_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()"}
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "magic_links_token_hash_unique": {"name": "magic_links_token_hash_unique", "nullsNotDistinct": false, "columns": ["token_hash"]}
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.nudges": {
+      "name": "nudges",
+      "schema": "",
+      "columns": {
+        "id": {"name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()"},
+        "bequest_id": {"name": "bequest_id", "type": "text", "primaryKey": false, "notNull": true},
+        "kind": {"name": "kind", "type": "text", "primaryKey": false, "notNull": true},
+        "ping_cycle_at": {"name": "ping_cycle_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true},
+        "sent_at": {"name": "sent_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()"}
+      },
+      "indexes": {
+        "nudge_dedupe_idx": {"name": "nudge_dedupe_idx", "columns": [{"expression": "bequest_id", "isExpression": false, "asc": true, "nulls": "last"}, {"expression": "kind", "isExpression": false, "asc": true, "nulls": "last"}, {"expression": "ping_cycle_at", "isExpression": false, "asc": true, "nulls": "last"}], "isUnique": false, "concurrently": false, "method": "btree", "with": {}}
+      },
+      "foreignKeys": {
+        "nudges_bequest_id_bequests_id_fk": {"name": "nudges_bequest_id_bequests_id_fk", "tableFrom": "nudges", "tableTo": "bequests", "columnsFrom": ["bequest_id"], "columnsTo": ["id"], "onDelete": "cascade", "onUpdate": "no action"}
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ping_logs": {
+      "name": "ping_logs",
+      "schema": "",
+      "columns": {
+        "id": {"name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()"},
+        "bequest_id": {"name": "bequest_id", "type": "text", "primaryKey": false, "notNull": true},
+        "source": {"name": "source", "type": "text", "primaryKey": false, "notNull": true},
+        "at": {"name": "at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()"}
+      },
+      "indexes": {
+        "ping_log_bequest_idx": {"name": "ping_log_bequest_idx", "columns": [{"expression": "bequest_id", "isExpression": false, "asc": true, "nulls": "last"}], "isUnique": false, "concurrently": false, "method": "btree", "with": {}}
+      },
+      "foreignKeys": {
+        "ping_logs_bequest_id_bequests_id_fk": {"name": "ping_logs_bequest_id_bequests_id_fk", "tableFrom": "ping_logs", "tableTo": "bequests", "columnsFrom": ["bequest_id"], "columnsTo": ["id"], "onDelete": "cascade", "onUpdate": "no action"}
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.telegram_links": {
+      "name": "telegram_links",
+      "schema": "",
+      "columns": {
+        "id": {"name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()"},
+        "user_id": {"name": "user_id", "type": "uuid", "primaryKey": false, "notNull": true},
+        "token": {"name": "token", "type": "text", "primaryKey": false, "notNull": true},
+        "expires_at": {"name": "expires_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true},
+        "consumed_at": {"name": "consumed_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": false}
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "telegram_links_user_id_users_id_fk": {"name": "telegram_links_user_id_users_id_fk", "tableFrom": "telegram_links", "tableTo": "users", "columnsFrom": ["user_id"], "columnsTo": ["id"], "onDelete": "cascade", "onUpdate": "no action"}
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "telegram_links_token_unique": {"name": "telegram_links_token_unique", "nullsNotDistinct": false, "columns": ["token"]}
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {"name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()"},
+        "email": {"name": "email", "type": "text", "primaryKey": false, "notNull": false},
+        "eth_address": {"name": "eth_address", "type": "text", "primaryKey": false, "notNull": false},
+        "telegram_chat_id": {"name": "telegram_chat_id", "type": "text", "primaryKey": false, "notNull": false},
+        "owner_address": {"name": "owner_address", "type": "text", "primaryKey": false, "notNull": false},
+        "created_at": {"name": "created_at", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()"}
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {"name": "users_email_unique", "nullsNotDistinct": false, "columns": ["email"]},
+        "users_eth_address_unique": {"name": "users_eth_address_unique", "nullsNotDistinct": false, "columns": ["eth_address"]}
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {"columns": {}, "schemas": {}, "tables": {}}
+}
