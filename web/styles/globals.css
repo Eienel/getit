@@ -31,6 +31,10 @@ html, body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   hanging-punctuation: first last;
+  /* Prevent any overflowing decoration (watermark, dropcap, fleuron tracking)
+     from creating a horizontal scrollbar on narrow phones. */
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 /* Monospace for addresses and IDs: SF Mono on Apple, sensible everywhere else */
@@ -38,6 +42,16 @@ html, body {
   font-family: ui-monospace, "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
   font-feature-settings: "tnum" 1;
 }
+
+/* Long inline tokens (wallet addresses, tx hashes, magic-link URLs) must be
+   able to wrap mid-string or they push the column wider than the viewport. */
+code, .font-mono {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Defensive: every block-level element fits inside its parent. */
+img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
 
 /* Two stacked layers on the body: a warm gradient (suggests light falling on
    the page) and an SVG fractal-noise grain (real paper fibre). Both fixed so
@@ -132,11 +146,12 @@ button { font-family: inherit; }
       0 2px 6px rgba(40, 24, 12, 0.08);
   }
 
-  /* Drop cap with proper bezel. */
+  /* Drop cap with proper bezel. Slightly smaller on phones so it doesn't
+     swallow the column. */
   .dropcap::first-letter {
     font-family: "Playfair Display", Georgia, serif;
     font-weight: 900;
-    font-size: 5.4em;
+    font-size: 4em;
     float: left;
     line-height: 0.82;
     margin: 0.05em 0.1em 0 0;
@@ -145,6 +160,9 @@ button { font-family: inherit; }
       0 1px 0 rgba(255, 250, 240, 0.6),
       0 -0.5px 0 rgba(20, 14, 8, 0.14),
       1px 1px 0 rgba(110, 27, 20, 0.05);
+  }
+  @media (min-width: 640px) {
+    .dropcap::first-letter { font-size: 5.4em; }
   }
 
   .pulled-quote {
@@ -248,20 +266,25 @@ button { font-family: inherit; }
   }
   .col-rule { column-rule: 0.5px solid var(--ink); }
 
-  /* Fleuron used as section separator */
+  /* Fleuron used as section separator. Tracking dialed back on narrow phones
+     so the three glyphs don't overflow the column. */
   .fleuron {
     text-align: center;
     color: var(--ink-faded);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     line-height: 1;
     margin: 2rem 0;
-    letter-spacing: 1.5rem;
-    text-indent: 1.5rem;
+    letter-spacing: 0.75rem;
+    text-indent: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .fleuron { font-size: 1.5rem; letter-spacing: 1.5rem; text-indent: 1.5rem; }
   }
   .fleuron::before { content: "❦  ✦  ❦"; }
 
-  /* Watermark: large faded display letter behind a section */
-  .watermarked { position: relative; }
+  /* Watermark: large faded display letter behind a section. Sized in vw on
+     mobile so it never exceeds the viewport; clamped on desktop for legibility. */
+  .watermarked { position: relative; overflow: hidden; }
   .watermarked::before {
     content: "B";
     position: absolute;
@@ -271,7 +294,7 @@ button { font-family: inherit; }
     justify-content: center;
     font-family: "Playfair Display", serif;
     font-weight: 900;
-    font-size: 22rem;
+    font-size: clamp(8rem, 70vw, 22rem);
     color: rgba(28, 24, 20, 0.035);
     pointer-events: none;
     z-index: 0;
