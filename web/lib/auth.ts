@@ -8,7 +8,12 @@ const SESSION_COOKIE = "bq_session";
 const SESSION_TTL_DAYS = 30;
 const MAGIC_LINK_TTL_MIN = 15;
 
-export type Session = { userId: string; email: string; iat: number };
+export type Session = {
+  userId: string;
+  email?: string | null;
+  ethAddress?: string | null;
+  iat: number;
+};
 
 export async function getSession(): Promise<Session | null> {
   const cookie = cookies().get(SESSION_COOKIE)?.value;
@@ -17,7 +22,7 @@ export async function getSession(): Promise<Session | null> {
   return v;
 }
 
-export async function setSession(s: { userId: string; email: string }) {
+export async function setSession(s: { userId: string; email?: string | null; ethAddress?: string | null }) {
   const token = signToken({ ...s, iat: Math.floor(Date.now() / 1000) }, SESSION_TTL_DAYS * 86400);
   cookies().set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -97,4 +102,23 @@ export async function requireSession(): Promise<Session> {
     throw e;
   }
   return s;
+}
+
+// Upsert a user by Ethereum address (sign-in via SIWE). The address must be
+// lowercased before storage so unique-by-address works.
+export async function upsertUserByEthAddress(ethAddress: string): Promise<{ userId: string; ethAddress: string }> {
+  const lower = ethAddress.toLowerCase();
+  const existing = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.ethAddress, lower))
+    .limit(1);
+  if (existing.length > 0) {
+    return { userId: existing[0].id, ethAddress: lower };
+  }
+  const [created] = await db
+    .insert(schema.users)
+    .values({ ethAddress: lower })
+    .returning({ id: schema.users.id });
+  return { userId: created.id, ethAddress: lower };
 }

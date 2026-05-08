@@ -8,9 +8,13 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+// A user can sign in with either an email (magic-link) or an Ethereum address
+// (Sign-In With Ethereum). Both fields are nullable + unique-when-present so
+// the same user can later link both. At least one must be set.
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  email: text("email").notNull().unique(),
+  email: text("email").unique(),
+  ethAddress: text("eth_address").unique(), // lowercased 0x...
   telegramChatId: text("telegram_chat_id"),
   ownerAddress: text("owner_address"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -78,7 +82,7 @@ export const pingLogs = pgTable(
   }),
 );
 
-// Idempotency table for nudges — one row per (bequestId, kind, ping_cycle_at).
+// Idempotency table for nudges: one row per (bequestId, kind, ping_cycle_at).
 // `ping_cycle_at` is the bequest's `last_ping_at` when the nudge was sent;
 // when the user pings, the cycle changes, so nudges can fire again next cycle.
 export const nudges = pgTable(
@@ -97,7 +101,7 @@ export const nudges = pgTable(
   }),
 );
 
-// Magic-link sessions — single-use signin tokens
+// Magic-link sessions: single-use signin tokens
 export const magicLinks = pgTable("magic_links", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull(),
@@ -107,7 +111,7 @@ export const magicLinks = pgTable("magic_links", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Telegram /start tokens — one-time, link a chat_id to a user.
+// Telegram /start tokens: one-time, link a chat_id to a user.
 export const telegramLinks = pgTable("telegram_links", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id")

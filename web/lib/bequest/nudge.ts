@@ -68,16 +68,18 @@ export async function nudgeAll(): Promise<{ scanned: number; sent: number }> {
       const oneTapLink = `${appUrl.replace(/\/$/, "")}/api/bequests/${bq.id}/ping?via=email&t=${encodeURIComponent(oneTapToken)}`;
 
       try {
-        await sendNudgeEmail({
-          to: user.email,
-          link: oneTapLink,
-          bequestId: bq.id,
-          beneficiary: bq.beneficiaryAddress,
-          asset: bq.assetSymbol,
-          amount: bq.amountDecimal,
-          remainingMin,
-          kind: k.key,
-        });
+        if (user.email) {
+          await sendNudgeEmail({
+            to: user.email,
+            link: oneTapLink,
+            bequestId: bq.id,
+            beneficiary: bq.beneficiaryAddress,
+            asset: bq.assetSymbol,
+            amount: bq.amountDecimal,
+            remainingMin,
+            kind: k.key,
+          });
+        }
         if (user.telegramChatId) {
           await sendTelegram(
             user.telegramChatId,

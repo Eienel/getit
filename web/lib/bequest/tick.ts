@@ -1,4 +1,5 @@
-// Dead-man's switch — fires expired bequests. Invoked by Vercel Cron every minute.
+// Dead-man's switch. Fires expired bequests. Invoked by Vercel Cron and by
+// the bequest detail page's 8-second poll (self-tick fallback for Hobby plan).
 //
 // Idempotency: we set status='triggered' + triggered_at BEFORE broadcasting,
 // in a single conditional UPDATE. Two cron invocations cannot double-fire.
@@ -58,7 +59,7 @@ export async function tick(): Promise<TickResult> {
         amount: b.amountDecimal,
         to: b.beneficiaryAddress as Address,
         privateKey: pk,
-        policy, // ← scoped policy gate runs HERE, before signing
+        policy, // scoped policy gate runs HERE, before signing
       });
 
       await db
@@ -98,15 +99,17 @@ async function notifyOwner(bequestId: string, txnHash: string) {
     if (!rows[0]) return;
     const { bq, user } = rows[0];
     const url = explorerTxUrl(bq.assetChain, txnHash);
-    await sendTriggeredEmail({
-      to: user.email,
-      bequestId: bq.id,
-      txnHash,
-      chainExplorerUrl: url,
-      beneficiary: bq.beneficiaryAddress,
-      asset: bq.assetSymbol,
-      amount: bq.amountDecimal,
-    });
+    if (user.email) {
+      await sendTriggeredEmail({
+        to: user.email,
+        bequestId: bq.id,
+        txnHash,
+        chainExplorerUrl: url,
+        beneficiary: bq.beneficiaryAddress,
+        asset: bq.assetSymbol,
+        amount: bq.amountDecimal,
+      });
+    }
     if (user.telegramChatId) {
       await sendTelegram(
         user.telegramChatId,
