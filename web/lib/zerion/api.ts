@@ -1,4 +1,4 @@
-// Thin Zerion API client — direct adaptation of the auth + retry flow in
+// Thin Zerion API client. Direct adaptation of the auth and retry flow in
 // /cli/utils/api/{auth.js,client.js}. The CLI's resolveApiKeyAuth() reads
 // process.env.ZERION_API_KEY first; we honor the same contract here so we
 // can deploy on Vercel with a plain env var.
@@ -90,7 +90,7 @@ export async function fetchZerion<T = unknown>(
           ? (payload as { errors: { detail?: string; title?: string }[] }).errors[0]
           : null;
       const detail = apiErr?.detail || apiErr?.title;
-      const msg = `Zerion API error: ${response.status} ${response.statusText}${detail ? ` — ${detail}` : ""}`;
+      const msg = `Zerion API error: ${response.status} ${response.statusText}${detail ? `. ${detail}` : ""}`;
       throw new Error(msg);
     }
 
@@ -98,7 +98,7 @@ export async function fetchZerion<T = unknown>(
   }
 }
 
-// Wallet positions/balances — used to detect when the per-bequest deposit
+// Wallet positions/balances. Used to detect when the per-bequest deposit
 // address has been funded.
 export async function getWalletPositions(address: string, chain?: string) {
   const params: Record<string, string> = {

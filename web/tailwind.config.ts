@@ -14,8 +14,10 @@ const config: Config = {
         accent: "#8b1c1c",
       },
       fontFamily: {
-        display: ['"Playfair Display"', "Georgia", "serif"],
-        serif: ['"Source Serif Pro"', '"Times New Roman"', "Times", "serif"],
+        display: ['"Playfair Display"', '"EB Garamond"', "Georgia", "serif"],
+        serif: ['"EB Garamond"', '"Cormorant Garamond"', '"Source Serif Pro"', "Times", "serif"],
+        engraved: ['"Cinzel"', '"Playfair Display"', "Georgia", "serif"],
+        script: ['"Allura"', '"Cormorant Garamond"', "cursive"],
         mono: ['"Courier New"', "monospace"],
       },
       letterSpacing: {

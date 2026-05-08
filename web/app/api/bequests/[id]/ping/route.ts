@@ -18,7 +18,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   }
 }
 
-// GET /api/bequests/[id]/ping?via=email&t=<token> — one-tap email link.
+// GET /api/bequests/[id]/ping?via=email&t=<token>: one-tap email link.
 // No auth required, but the token is HMAC-signed by us, single-purpose, time-bounded.
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const url = req.nextUrl;
@@ -51,11 +51,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 function pingHtml({ ok, bequestId, nextDeadline }: { ok: boolean; bequestId: string; nextDeadline: Date | null }) {
   const heading = ok ? "Clock reset." : "Ping not accepted.";
   const detail = ok && nextDeadline
-    ? `Bequest <code>${bequestId}</code> resets — next deadline ${nextDeadline.toUTCString()}.`
+    ? `Bequest <code>${bequestId}</code> resets. Next deadline ${nextDeadline.toUTCString()}.`
     : `The bequest may already be triggered, cancelled, or it was not awaiting a ping.`;
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${heading} — Bequest</title>
+<title>${heading} · Bequest</title>
 <style>body{font-family:Georgia,serif;background:#f4ede4;color:#1a1a1a;margin:0;padding:48px 16px}
 .card{max-width:520px;margin:0 auto;text-align:center}
 h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;letter-spacing:0.02em;margin:.2em 0}

@@ -90,7 +90,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
     if (id) {
       const result = await pingBequest({ bequestId: id, source: "telegram", userId: user.id });
       if (!result.ok) {
-        await sendTelegram(chatId, `Could not ping ${id} — not found, not yours, or not armed.`);
+        await sendTelegram(chatId, `Could not ping ${id}: not found, not yours, or not armed.`);
       } else {
         await sendTelegram(chatId, `Pinged ${id}. Next deadline ${result.nextDeadline?.toUTCString() ?? "?"}.`);
       }
@@ -113,7 +113,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
     const lines = rows.slice(0, 10).map((b) => {
       const when = b.lastPingAt
         ? new Date(new Date(b.lastPingAt).getTime() + b.checkinWindowSeconds * 1000).toISOString()
-        : "—";
+        : "n/a";
       return `${b.id} · ${b.amountDecimal} ${b.assetSymbol} · ${b.status} · deadline ${when}`;
     });
     await sendTelegram(chatId, lines.join("\n"));
@@ -121,7 +121,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
   }
 
   if (text === "/help" || text === "/start") {
-    await sendTelegram(chatId, "Commands:\n/ping — reset clock on all bequests\n/ping bq_xxxx — reset one\n/list — show all\n/help — this help");
+    await sendTelegram(chatId, "Commands:\n/ping · reset clock on all bequests\n/ping bq_xxxx · reset one\n/list · show all\n/help · this help");
     return;
   }
 }

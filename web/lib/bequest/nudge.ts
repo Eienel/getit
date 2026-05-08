@@ -1,5 +1,5 @@
 // Sends reminder emails / Telegram messages at 50%, 75%, 90% of each
-// bequest's check-in window. Idempotent via the `nudges` table — keyed on
+// bequest's check-in window. Idempotent via the `nudges` table, keyed on
 // (bequestId, kind, ping_cycle_at) so each cycle gets exactly one of each.
 
 import { and, eq, sql } from "drizzle-orm";
@@ -34,7 +34,7 @@ export async function nudgeAll(): Promise<{ scanned: number; sent: number }> {
     const elapsed = now - lastPing;
     if (elapsed <= 0) continue;
     const elapsedFrac = elapsed / windowMs;
-    if (elapsedFrac >= 1) continue; // already expired — tick handles it
+    if (elapsedFrac >= 1) continue; // already expired; tick handles it
 
     for (const k of KINDS) {
       if (elapsedFrac < k.threshold) continue;
@@ -53,7 +53,7 @@ export async function nudgeAll(): Promise<{ scanned: number; sent: number }> {
         .limit(1);
       if (existing.length > 0) continue;
 
-      // Mark nudge sent FIRST (idempotency anchor) — if email/telegram fails,
+      // Mark nudge sent FIRST (idempotency anchor); if email/telegram fails,
       // we still don't double-send; user can refresh their view in-app.
       await db.insert(schema.nudges).values({
         bequestId: bq.id,
@@ -81,7 +81,7 @@ export async function nudgeAll(): Promise<{ scanned: number; sent: number }> {
         if (user.telegramChatId) {
           await sendTelegram(
             user.telegramChatId,
-            `[Bequest ${bq.id}] ${k.key} of window elapsed — ${bq.amountDecimal} ${bq.assetSymbol} delivers in ~${remainingMin} min.\nReply with /ping ${bq.id} to reset, or /ping to reset all.`,
+            `[Bequest ${bq.id}] ${k.key} of window elapsed. ${bq.amountDecimal} ${bq.assetSymbol} delivers in ~${remainingMin} min.\nReply with /ping ${bq.id} to reset, or /ping to reset all.`,
           );
         }
         sent += 1;
