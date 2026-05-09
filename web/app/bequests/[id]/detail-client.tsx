@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -28,8 +28,16 @@ type Props = {
 export function BequestDetailClient({ bequest: initial, policy, explorer }: Props) {
   const router = useRouter();
   const [bequest, setBequest] = useState(initial);
-  const [, setNow] = useState(Date.now());
+  // Sync local state when the server hands us fresh props (after router.refresh).
+  // Without this, useState pins to the first `initial` and the UI never updates
+  // even when the server has flipped status to triggered/failed.
+  useEffect(() => {
+    setBequest(initial);
+  }, [initial]);
+
+  const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [tgUrl, setTgUrl] = useState<string | null>(null);
   const [showCancel, setShowCancel] = useState(false);
   const [ownerAddr, setOwnerAddr] = useState("");
@@ -50,26 +58,62 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
     return () => clearInterval(id);
   }, []);
 
-  // Poll the server for status changes (so a cron-fire shows up without manual refresh)
+  // Poll the server for status changes (so a cron-fire shows up without manual
+  // refresh). 8s by default, 3s when within the last 30s of the deadline so we
+  // catch the fire promptly. The check() also drives server-side self-tick,
+  // since the GET handler runs tick() inline when armed-and-expired.
   useEffect(() => {
     if (bequest.status !== "armed") return;
-    const id = setInterval(async () => {
+    let aborted = false;
+    async function check() {
+      if (aborted) return;
       try {
         const res = await fetch(`/api/bequests/${bequest.id}`);
-        if (!res.ok) return;
+        if (!res.ok || aborted) return;
         const j = await res.json();
         if (j.status !== bequest.status || j.lastPingAt !== bequest.lastPingAt || j.txnHash !== bequest.txnHash) {
           router.refresh();
         }
       } catch {}
-    }, 8000);
-    return () => clearInterval(id);
-  }, [bequest.status, bequest.id, bequest.lastPingAt, bequest.txnHash, router]);
+    }
+    const remaining = bequest.deadline ? new Date(bequest.deadline).getTime() - Date.now() : Infinity;
+    const interval = remaining < 30_000 ? 3000 : 8000;
+    const id = setInterval(check, interval);
+    return () => { aborted = true; clearInterval(id); };
+  }, [bequest.status, bequest.id, bequest.lastPingAt, bequest.txnHash, bequest.deadline, router]);
 
-  const remainingMs = useMemo(() => {
-    if (!bequest.deadline) return null;
-    return new Date(bequest.deadline).getTime() - Date.now();
+  // Fire one immediate check the moment the deadline passes, so the user
+  // doesn't have to wait up to a full poll interval (or worse, on a mobile tab
+  // that was throttled). Guarded by a flag so it only runs once per crossover;
+  // resets when deadline changes (after a ping).
+  const [pastDeadline, setPastDeadline] = useState(false);
+  useEffect(() => {
+    setPastDeadline(false);
   }, [bequest.deadline]);
+  useEffect(() => {
+    if (bequest.status !== "armed") return;
+    if (!bequest.deadline) return;
+    if (pastDeadline) return;
+    if (new Date(bequest.deadline).getTime() > now) return;
+    setPastDeadline(true);
+    fetch(`/api/bequests/${bequest.id}`)
+      .then(() => router.refresh())
+      .catch(() => {});
+  }, [now, bequest.deadline, bequest.status, bequest.id, pastDeadline, router]);
+
+  const remainingMs = bequest.deadline
+    ? new Date(bequest.deadline).getTime() - now
+    : null;
+
+  async function checkNow() {
+    setChecking(true);
+    try {
+      const res = await fetch(`/api/bequests/${bequest.id}`);
+      if (res.ok) router.refresh();
+    } catch {} finally {
+      setChecking(false);
+    }
+  }
 
   async function ping() {
     setBusy(true);
@@ -199,6 +243,17 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
                 Bot opened in a new tab. Tap <em>Start</em> to link.
               </p>
             )}
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-ink-faded">
+              <span>Auto-checking every {remainingMs != null && remainingMs < 30_000 ? "3s" : "8s"}.</span>
+              <button
+                type="button"
+                onClick={checkNow}
+                disabled={checking}
+                className="underline uppercase tracking-smallcaps"
+              >
+                {checking ? "Checking…" : "Check now"}
+              </button>
+            </div>
           </>
         )}
 
