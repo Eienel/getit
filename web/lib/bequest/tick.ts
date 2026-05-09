@@ -1,5 +1,5 @@
 // Dead-man's switch. Fires expired bequests. Invoked by Vercel Cron and by
-// the bequest detail page's 8-second poll (self-tick fallback for Hobby plan).
+// the bequest detail page's poll (self-tick fallback for Hobby plan).
 //
 // Idempotency: we set status='triggered' + triggered_at BEFORE broadcasting,
 // in a single conditional UPDATE. Two cron invocations cannot double-fire.
@@ -21,13 +21,76 @@ export type TickResult = {
   delivered: Array<{ bequestId: string; txnHash: string }>;
 };
 
+export type TickOneResult =
+  | { result: "fired"; txnHash: string }
+  | { result: "failed"; error: string }
+  | { result: "not-found" }
+  | { result: "not-armed"; status: string }
+  | { result: "not-expired"; deadline: string | null }
+  | { result: "race" };
+
+// Process a single bequest. Returns a precise outcome the UI can show.
+// Used by the detail-page self-tick path AND the manual /fire debug endpoint.
+export async function tickOne(bequestId: string): Promise<TickOneResult> {
+  const rows = await db
+    .select()
+    .from(schema.bequests)
+    .where(eq(schema.bequests.id, bequestId))
+    .limit(1);
+  const b = rows[0];
+  if (!b) return { result: "not-found" };
+  if (b.status !== "armed") return { result: "not-armed", status: b.status };
+  if (!b.lastPingAt) return { result: "not-expired", deadline: null };
+
+  const dl = new Date(new Date(b.lastPingAt).getTime() + b.checkinWindowSeconds * 1000);
+  if (dl >= new Date()) return { result: "not-expired", deadline: dl.toISOString() };
+
+  // Atomic guard: flip to triggered ONLY if still armed
+  const updated = await db
+    .update(schema.bequests)
+    .set({ status: "triggered", triggeredAt: new Date() })
+    .where(and(eq(schema.bequests.id, b.id), eq(schema.bequests.status, "armed")))
+    .returning({ id: schema.bequests.id });
+  if (updated.length === 0) return { result: "race" };
+
+  try {
+    const policy: ScopedPolicy = b.policyJson ? JSON.parse(b.policyJson) : null;
+    if (!policy) throw new Error("Bequest is armed but has no policy");
+
+    const pk = decrypt(b.walletKeyCiphertext, b.walletKeyNonce, `wallet:${b.id}`) as Hex;
+    const send = await sendOnchain({
+      chain: b.assetChain,
+      asset: b.assetSymbol,
+      amount: b.amountDecimal,
+      to: b.beneficiaryAddress as Address,
+      privateKey: pk,
+      policy, // scoped policy gate runs HERE, before signing
+    });
+
+    await db
+      .update(schema.bequests)
+      .set({ txnHash: send.hash })
+      .where(eq(schema.bequests.id, b.id));
+
+    void notifyOwner(b.id, send.hash);
+    return { result: "fired", txnHash: send.hash };
+  } catch (err) {
+    const msg = (err as Error).message ?? "unknown";
+    await db
+      .update(schema.bequests)
+      .set({ status: "failed", failureReason: msg })
+      .where(eq(schema.bequests.id, b.id));
+    return { result: "failed", error: msg };
+  }
+}
+
 export async function tick(): Promise<TickResult> {
   const now = new Date();
   const result: TickResult = { scanned: 0, fired: 0, errors: [], delivered: [] };
 
   // Find all bequests where now > last_ping_at + checkin_window_seconds
   const expired = await db
-    .select()
+    .select({ id: schema.bequests.id })
     .from(schema.bequests)
     .where(
       and(
@@ -39,46 +102,13 @@ export async function tick(): Promise<TickResult> {
 
   result.scanned = expired.length;
 
-  for (const b of expired) {
-    // Atomic guard: flip to triggered ONLY if still armed
-    const updated = await db
-      .update(schema.bequests)
-      .set({ status: "triggered", triggeredAt: now })
-      .where(and(eq(schema.bequests.id, b.id), eq(schema.bequests.status, "armed")))
-      .returning({ id: schema.bequests.id });
-    if (updated.length === 0) continue; // someone else fired/cancelled
-
-    try {
-      const policy: ScopedPolicy = b.policyJson ? JSON.parse(b.policyJson) : null;
-      if (!policy) throw new Error("Bequest is armed but has no policy");
-
-      const pk = decrypt(b.walletKeyCiphertext, b.walletKeyNonce, `wallet:${b.id}`) as Hex;
-      const send = await sendOnchain({
-        chain: b.assetChain,
-        asset: b.assetSymbol,
-        amount: b.amountDecimal,
-        to: b.beneficiaryAddress as Address,
-        privateKey: pk,
-        policy, // scoped policy gate runs HERE, before signing
-      });
-
-      await db
-        .update(schema.bequests)
-        .set({ txnHash: send.hash })
-        .where(eq(schema.bequests.id, b.id));
-
+  for (const row of expired) {
+    const out = await tickOne(row.id);
+    if (out.result === "fired") {
       result.fired += 1;
-      result.delivered.push({ bequestId: b.id, txnHash: send.hash });
-
-      // Notify owner
-      void notifyOwner(b.id, send.hash);
-    } catch (err) {
-      const msg = (err as Error).message ?? "unknown";
-      await db
-        .update(schema.bequests)
-        .set({ status: "failed", failureReason: msg })
-        .where(eq(schema.bequests.id, b.id));
-      result.errors.push({ bequestId: b.id, error: msg });
+      result.delivered.push({ bequestId: row.id, txnHash: out.txnHash });
+    } else if (out.result === "failed") {
+      result.errors.push({ bequestId: row.id, error: out.error });
     }
   }
 

@@ -61,7 +61,7 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
   // Poll the server for status changes (so a cron-fire shows up without manual
   // refresh). 8s by default, 3s when within the last 30s of the deadline so we
   // catch the fire promptly. The check() also drives server-side self-tick,
-  // since the GET handler runs tick() inline when armed-and-expired.
+  // since the GET handler runs tickOne() inline when armed-and-expired.
   useEffect(() => {
     if (bequest.status !== "armed") return;
     let aborted = false;
@@ -87,6 +87,8 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
   // that was throttled). Guarded by a flag so it only runs once per crossover;
   // resets when deadline changes (after a ping).
   const [pastDeadline, setPastDeadline] = useState(false);
+  const [fireResult, setFireResult] = useState<string | null>(null);
+  const [firing, setFiring] = useState(false);
   useEffect(() => {
     setPastDeadline(false);
   }, [bequest.deadline]);
@@ -112,6 +114,29 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
       if (res.ok) router.refresh();
     } catch {} finally {
       setChecking(false);
+    }
+  }
+
+  async function fireNow() {
+    setFiring(true);
+    setFireResult(null);
+    try {
+      const res = await fetch(`/api/bequests/${bequest.id}/fire`, { method: "POST" });
+      const j = await res.json();
+      // Pretty-print the diagnostic outcome
+      if (j.result === "fired") setFireResult(`Fired. tx ${j.txnHash}`);
+      else if (j.result === "failed") setFireResult(`Failed: ${j.error}`);
+      else if (j.result === "not-expired") setFireResult(`Not yet expired (deadline ${j.deadline}).`);
+      else if (j.result === "not-armed") setFireResult(`Not armed (status: ${j.status}).`);
+      else if (j.result === "race") setFireResult(`Race: another tick won.`);
+      else if (j.result === "not-found") setFireResult(`Bequest not found.`);
+      else if (j.error) setFireResult(`Error: ${j.error}`);
+      else setFireResult(JSON.stringify(j));
+      router.refresh();
+    } catch (err) {
+      setFireResult(`Network error: ${(err as Error).message}`);
+    } finally {
+      setFiring(false);
     }
   }
 
@@ -243,7 +268,7 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
                 Bot opened in a new tab. Tap <em>Start</em> to link.
               </p>
             )}
-            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-ink-faded">
+            <div className="mt-4 flex items-center justify-center gap-3 text-xs text-ink-faded">
               <span>Auto-checking every {remainingMs != null && remainingMs < 30_000 ? "3s" : "8s"}.</span>
               <button
                 type="button"
@@ -253,7 +278,20 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
               >
                 {checking ? "Checking…" : "Check now"}
               </button>
+              {remainingMs != null && remainingMs <= 0 && (
+                <button
+                  type="button"
+                  onClick={fireNow}
+                  disabled={firing}
+                  className="underline uppercase tracking-smallcaps text-accent"
+                >
+                  {firing ? "Firing…" : "Fire now"}
+                </button>
+              )}
             </div>
+            {fireResult && (
+              <p className="mt-3 text-xs text-ink font-mono break-all">{fireResult}</p>
+            )}
           </>
         )}
 
