@@ -35,6 +35,15 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
   const [ownerAddr, setOwnerAddr] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Export-private-key state. The key is only fetched after the user explicitly
+  // clicks through the warning, and is wiped from React state when the modal
+  // closes. We never persist it client-side.
+  const [showKey, setShowKey] = useState(false);
+  const [keyBusy, setKeyBusy] = useState(false);
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [keyValue, setKeyValue] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
+
   // Tick local clock every second for the countdown
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -90,6 +99,39 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
       setError((err as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function revealKey() {
+    setKeyBusy(true);
+    setKeyError(null);
+    try {
+      const res = await fetch(`/api/bequests/${bequest.id}/private-key`, { method: "POST" });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
+      setKeyValue(j.privateKey as string);
+    } catch (err) {
+      setKeyError((err as Error).message);
+    } finally {
+      setKeyBusy(false);
+    }
+  }
+
+  function closeKeyModal() {
+    setShowKey(false);
+    setKeyValue(null);
+    setKeyError(null);
+    setKeyCopied(false);
+  }
+
+  async function copyKey() {
+    if (!keyValue) return;
+    try {
+      await navigator.clipboard.writeText(keyValue);
+      setKeyCopied(true);
+      setTimeout(() => setKeyCopied(false), 2000);
+    } catch {
+      setKeyError("Could not copy. Select and copy the key manually.");
     }
   }
 
@@ -202,6 +244,14 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
               <a href={explorer.walletUrl} target="_blank" rel="noreferrer">{shortAddr(bequest.walletAddress)}</a>
             </dd>
           </dl>
+          <button
+            type="button"
+            onClick={() => setShowKey(true)}
+            className="mt-3 text-xs uppercase tracking-smallcaps underline"
+          >
+            Export private key
+          </button>
+          <p className="text-xs text-ink-faded mt-1">Take true custody of this wallet.</p>
         </div>
 
         <div>
@@ -229,6 +279,21 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
       </section>
 
       {error && <p className="badge text-accent" style={{ borderColor: "#8b1c1c" }}>{error}</p>}
+
+      {showKey && (
+        <ExportKeyModal
+          walletAddress={bequest.walletAddress}
+          chain={bequest.assetChain}
+          status={bequest.status}
+          keyValue={keyValue}
+          busy={keyBusy}
+          error={keyError}
+          copied={keyCopied}
+          onReveal={revealKey}
+          onCopy={copyKey}
+          onClose={closeKeyModal}
+        />
+      )}
 
       {bequest.status === "armed" && (
         <section className="mt-8">
@@ -260,6 +325,91 @@ export function BequestDetailClient({ bequest: initial, policy, explorer }: Prop
         </section>
       )}
     </article>
+  );
+}
+
+function ExportKeyModal(props: {
+  walletAddress: string;
+  chain: string;
+  status: string;
+  keyValue: string | null;
+  busy: boolean;
+  error: string | null;
+  copied: boolean;
+  onReveal: () => void;
+  onCopy: () => void;
+  onClose: () => void;
+}) {
+  const { walletAddress, chain, status, keyValue, busy, error, copied, onReveal, onCopy, onClose } = props;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Export private key"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-w-lg w-full bg-paper border border-ink p-5 sm:p-6 shadow-newsprint"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-display text-2xl">Export private key</h3>
+          <button onClick={onClose} className="text-xl leading-none" aria-label="Close">×</button>
+        </div>
+
+        <p className="mt-3 text-sm">
+          You hold the keys. The signing key for this per-bequest wallet is yours
+          to take. Anyone with this key controls the funds &mdash; treat it like
+          cash.
+        </p>
+
+        <dl className="mt-4 grid grid-cols-3 gap-y-1 text-xs">
+          <dt className="text-ink-faded uppercase tracking-smallcaps">Address</dt>
+          <dd className="col-span-2 font-mono break-all">{walletAddress}</dd>
+          <dt className="text-ink-faded uppercase tracking-smallcaps">Chain</dt>
+          <dd className="col-span-2">{chain}</dd>
+        </dl>
+
+        <hr className="my-4" />
+
+        {!keyValue ? (
+          <>
+            <ul className="text-sm text-ink-faded space-y-1 list-disc pl-5 mb-4">
+              <li>Anyone with this key can drain the wallet, including before the bequest fires.</li>
+              <li>If you import it elsewhere and move funds, the agent loop has nothing to deliver.</li>
+              <li>Bequest will keep checking in &mdash; cancel it if you no longer want it armed.</li>
+            </ul>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button onClick={onReveal} disabled={busy} className="btn-solid flex-1">
+                {busy ? "Decrypting…" : "Reveal private key"}
+              </button>
+              <button onClick={onClose} disabled={busy} className="btn">Cancel</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="smallcaps text-xs text-ink-faded">Private key (hex)</p>
+            <pre className="font-mono text-xs break-all whitespace-pre-wrap mt-1 p-3 border border-ink bg-paper-dark/30">
+              {keyValue}
+            </pre>
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <button onClick={onCopy} className="btn-solid flex-1">
+                {copied ? "Copied" : "Copy to clipboard"}
+              </button>
+              <button onClick={onClose} className="btn">Done</button>
+            </div>
+            <p className="text-xs text-ink-faded mt-3">
+              In MetaMask: <em>Account menu &rarr; Add account &rarr; Import account &rarr; Private key</em>.
+              Make sure your wallet is on the {chain} network to see the balance.
+              {status === "triggered" && " (Note: this bequest already delivered; the wallet is empty.)"}
+            </p>
+          </>
+        )}
+
+        {error && <p className="text-sm text-accent mt-3">{error}</p>}
+      </div>
+    </div>
   );
 }
 
