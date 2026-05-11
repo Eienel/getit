@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-paper text-ink antialiased">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-10">
+        <div className="document-shell mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-10">
           <Masthead />
           <main className="mt-8">{children}</main>
           <Footer />

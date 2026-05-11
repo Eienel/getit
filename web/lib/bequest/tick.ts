@@ -54,15 +54,32 @@ export async function tickOne(bequestId: string): Promise<TickOneResult> {
   if (updated.length === 0) return { result: "race" };
 
   try {
-    const policy: ScopedPolicy = b.policyJson ? JSON.parse(b.policyJson) : null;
+    let policy: ScopedPolicy = b.policyJson ? JSON.parse(b.policyJson) : null;
     if (!policy) throw new Error("Bequest is armed but has no policy");
+
+    // Keep policy allowlist aligned with the currently stored beneficiary
+    // address. This prevents stale allowlists from blocking delivery when the
+    // beneficiary was updated after arming.
+    const beneficiary = b.beneficiaryAddress.toLowerCase();
+    const allowed = policy.allowedAddresses.map((a) => a.toLowerCase());
+    if (!allowed.includes(beneficiary)) {
+      policy = {
+        ...policy,
+        chain: b.assetChain,
+        allowedAddresses: [beneficiary],
+      };
+      await db
+        .update(schema.bequests)
+        .set({ policyJson: JSON.stringify(policy) })
+        .where(eq(schema.bequests.id, b.id));
+    }
 
     const pk = decrypt(b.walletKeyCiphertext, b.walletKeyNonce, `wallet:${b.id}`) as Hex;
     const send = await sendOnchain({
       chain: b.assetChain,
       asset: b.assetSymbol,
       amount: b.amountDecimal,
-      to: b.beneficiaryAddress as Address,
+      to: beneficiary as Address,
       privateKey: pk,
       policy, // scoped policy gate runs HERE, before signing
     });
