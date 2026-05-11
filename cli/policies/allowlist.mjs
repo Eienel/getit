@@ -15,15 +15,13 @@ export function check(ctx) {
     a.toLowerCase(),
   );
 
-  // If no allowlist is set, allow everything
-  if (allowed.length === 0) {
-    return { allow: true };
-  }
+  console.log("TX TO:", tx.to);
+  console.log("TX DATA:", tx.data);
+  console.log("ALLOWLIST:", allowed);
 
   let recipient = (tx.to || "").toLowerCase();
   const data = (tx.data || "").toLowerCase();
 
-  // ERC20 transfer(address,uint256)
   const TRANSFER_SELECTOR = "0xa9059cbb";
 
   const isERC20Transfer =
@@ -39,13 +37,8 @@ export function check(ctx) {
       encodedRecipient
         .slice(24)
         .toLowerCase();
-  }
 
-  if (!recipient || recipient === "0x") {
-    return {
-      allow: false,
-      reason: "Transaction has no valid recipient address.",
-    };
+    console.log("DECODED ERC20 RECIPIENT:", recipient);
   }
 
   if (allowed.includes(recipient)) {
@@ -57,7 +50,6 @@ export function check(ctx) {
     reason: `Recipient ${recipient} is not in the allowlist.`,
   };
 }
-
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runPolicyFromStdin(check);
 }
