@@ -364,5 +364,26 @@ body > div:first-child::before {
   background: radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(40, 24, 12, 0.08) 100%);
 }
 
+
+/* Crisp, slightly rough paper edges using soft fibre noise bands at top/bottom. */
+body > div:first-child::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    radial-gradient(120% 20px at 50% -3px, rgba(54, 35, 18, 0.24) 0%, rgba(54, 35, 18, 0.10) 48%, transparent 74%) top/100% 30px no-repeat,
+    radial-gradient(120% 20px at 50% calc(100% + 3px), rgba(54, 35, 18, 0.22) 0%, rgba(54, 35, 18, 0.09) 48%, transparent 74%) bottom/100% 30px no-repeat,
+    linear-gradient(to right, rgba(54, 35, 18, 0.16), transparent 4%, transparent 96%, rgba(54, 35, 18, 0.16)),
+    repeating-linear-gradient(
+      to right,
+      rgba(70, 46, 24, 0.04) 0 2px,
+      transparent 2px 7px
+    );
+  mix-blend-mode: multiply;
+  opacity: 0.52;
+}
+
 /* Selection color: sepia ink */
 ::selection { background: rgba(110, 27, 20, 0.25); color: var(--ink); }
