@@ -350,7 +350,6 @@ button { font-family: inherit; }
   }
 }
 
-
 /* Subtle vignette at the very edges so the page feels like a sheet
    rather than a flat color. */
 body > div:first-child {
